@@ -17,6 +17,7 @@
   or 
   * a configuration file with the specified t1:t2:gff triplets (even for the entire species)
     * config example:
+
 > #### Bacteroides_vulgatus
 > Bacteroides_vulgatus.gff
 > T1.vcf | T2.vcf |
