@@ -18,23 +18,23 @@
   * a configuration file with the specified t1:t2:gff triplets (even for the entire species)
     * config example:
 
-#### Bacteroides_vulgatus
-Bacteroides_vulgatus.gff
-
-T1 file | T2 file
---- | ---
-T1.vcf | T2.vcf
-T1.vcf | T3.vcf
-T12.vcf | T22.vcf
-T12.vcf | T32.vcf
-
-#### Bacteroides_ovatus
-Bacteroides_ovatus.gff
-
-T1 file | T2 file
---- | ---
-T1.vcf | T2.vcf
-T1.vcf | T3.vcf
-T12.vcf | T22.vcf
-T12.vcf | T32.vcf
+> #### Bacteroides_vulgatus
+> Bacteroides_vulgatus.gff
+>
+> T1 file | T2 file
+> --- | ---
+> T1.vcf | T2.vcf
+> T1.vcf | T3.vcf
+> T12.vcf | T22.vcf
+> T12.vcf | T32.vcf
+> 
+> #### Bacteroides_ovatus
+> Bacteroides_ovatus.gff
+> 
+> T1 file | T2 file
+> --- | ---
+> T1.vcf | T2.vcf
+> T1.vcf | T3.vcf
+> T12.vcf | T22.vcf
+> T12.vcf | T32.vcf
 
