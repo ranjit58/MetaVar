@@ -33,11 +33,17 @@ parser.add_argument('-q', '--query',help="""Query the sample names of a provided
 file.""",action='store_true')
 parser.add_argument('-v', '--verbose',help="""Verbose mode will output additional information about how the program
 	runs.""",action='store_true')
+parser.add_argument('-o', '--output',help="""Specify the name of the output file, otherwise it will be the sample 
+names.""")
 args = parser.parse_args()
 
 if args.verbose:
 	import time
 	timein = time.time()
+
+
+header_offset = 8 # the number of columns until the first sample
+
 
 # logic to determine if is positional or based on the name
 try:
@@ -55,6 +61,13 @@ except ValueError:
 	if isposition:
 		print('Enter either only position or only sample name as the command line parameter.\n')
 		sys.exit()
+# check for negative number input
+if isposition:
+	print_out_samples = -100 # current design uses the header column numbers, so can compare to a non-sample column
+	if (int(args.t_init) >= -header_offset and int(args.t_init) <= 0) or \
+		(int(args.t_final) >= -header_offset and int(args.t_final) <= 0):
+		args.t_init = print_out_samples
+		args.t_final = print_out_samples
 
 init_flag = 0
 final_flag = 0
@@ -63,10 +76,13 @@ final_flag = 0
 # find the sample line
 # find the correct samples -> get the column numbers
 # read in descriptor and sample columns
+if args.output is None:
+	output_name = args.t_init + '_' + args.t_final + '.txt'
+else:
+	output_name = args.output
 
-with open(args.multi) as f,  open('output.txt', 'w+') as out:
+with open(args.multi) as f,  open(output_name, 'w+') as out:
 	multi  = csv.reader(f, delimiter="\t")
-	header_offset = 8 # the number of columns until the first sample
 	for row in multi:
 		if row[0][1] != '#':
 			# column 9 starts the samples
@@ -79,6 +95,7 @@ with open(args.multi) as f,  open('output.txt', 'w+') as out:
 						elif isposition:
 							if row.index(header) - header_offset == int(args.t_init):
 								init_col = row.index(header)
+								init_change_name = header
 								init_flag = 1
 						if not isposition and header == args.t_final:
 							final_col = row.index(header)
@@ -86,6 +103,7 @@ with open(args.multi) as f,  open('output.txt', 'w+') as out:
 						elif isposition:
 							if row.index(header) - header_offset == int(args.t_final):
 								final_col = row.index(header)
+								final_change_name = header
 								final_flag = 1
 					if init_flag == 0 or final_flag == 0:
 						print('Input a valid ID for the initial sample and the final sample.\n')
@@ -99,6 +117,13 @@ with open(args.multi) as f,  open('output.txt', 'w+') as out:
 				for col in row[0:header_offset]:
 					out.write(col + '\t')
 				out.write(row[init_col] + '\t' + row[final_col] + '\n')
+
+
+if isposition and args.output is None:
+	# rename the file to the correct default name
+	import os
+	output_name_fix = init_change_name + '_' + final_change_name + '.txt'
+	os.rename(output_name, output_name_fix) 
 
 if args.verbose:
 	timeout = time.time()
