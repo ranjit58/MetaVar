@@ -22,11 +22,22 @@ parser.add_argument('-p', '--position',help="""If the samples are not the last 2
 column number (from left to right) of the first vcf sample (this will assume that the second vcf file is directly
 following the first). Or specify the first vcf sample column number and the second vcf sample column
 number.""",nargs='+')
+parser.add_argument('-o', '--output', help="""Specify the output file name or path for saving.""")
+parser.add_argument('-v', '--verbose',help="""See additional output about how the script is running.""",
+action='store_true')
 
 args = parser.parse_args()
 
+if args.verbose:
+	import time
+	timein = time.time()
+
 first_flag = False # first time through flag
-new_file = args.input + '.diff'
+if args.output is None:
+	new_file = args.input + '.diff'
+else:
+	new_file = args.output
+
 zero_based = 1 # to ameliorate the zero-based and one-based counting of a user v. python
 
 # get the sample column position
@@ -72,3 +83,8 @@ with open(args.input) as f, open(new_file, 'w+') as out:
 			# either 1 and 1 or 0 and 0
 			continue
 # the final 2 columns are for comparison
+
+if args.verbose:
+	timeout = time.time()
+	elapse = timeout-timein
+	print('Elapse time in seconds:\t' + str(elapse) + '.\n')
