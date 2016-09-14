@@ -15,7 +15,7 @@ __email__="bdesilva@uab.edu, rkumar@uab.edu"
 parser = argparse.ArgumentParser(description="""Input a dual-sample linked vcf file and a gff file. Find where the SNP
 differences lie in the genes of the GFF file and output in a table format.""")
 parser.add_argument('dual',help="""Specify a dual-sample vcf file for reading and pulling SNP bp locations.""")
-parser.add_argument('gff',help="""Specify a gff file for reading and pulling gene information.""")
+parser.add_argument('gene',help="""Specify a gff file or a bed file for reading and pulling gene information.""")
 parser.add_argument('-c','--column',help="""Specify the column number of the base pair locations for the SNP
 changes.""", type=int)
 parser.add_argument('-p','--position',help="""If the samples are not the last 2 columns of the vcf file, indicate the 
@@ -50,18 +50,40 @@ if args.position is not None:
 		first_flag = True
 
 if args.output is None:
-	new_file = args.input + '.tbl'
+	new_file = args.dual + '.tbl'
 else:
 	new_file = args.output
 
-# open the vcf and gff files
+genes = []
+gene_count = []
+gene_info = []
 
+# open the vcf and gff files or 8 column bed file
+# columns 1, 2, 3, 7 from bed
+# columns   from gff
 with open(args.dual) as d, open(args.gff) as g, open(new_file) as out:
 	dual = csv.reader(d, '\t')
-	gff = csv.reader(g, '\t')
-	for row in dual:
-		# do something
-		pass
+	gene = csv.reader(g, '\t')
+	for d_row in dual:
+		# check for the 3rd (zero-based) column if is gene
+		# check if the dual bp is inside the range of the gene
+		for g_row in gene: # can make this quicker by only checking until a gene is inside region then next is outside
+			# check for each one
+			pdb.set_trace()
+			if d_row[3][0:3] == 'gene':
+				# check the ranges
+				if d_row[1] < g_row[1] and d_row[2] > g_row[1]:
+					# inside the range
+					# put into an output table
+					if genes.index(d_row[3]): # if gene already exists, then increment the count
+						gene_count[genes.index(d_row[3])] += 1
+					else: # otherwise append the gene and increment from 0
+						genes.append(d_row[3])
+						gene_count.append(1)
+						gene_info.append(g_row[7])
+			
+			# 1 and 7 from dual
+
 
 # either open each file and read in all the data needed or keep both files open as checking (first sounds better)
 
