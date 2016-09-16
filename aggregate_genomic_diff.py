@@ -20,19 +20,13 @@ class Gene:
 		self.count = count
 		self.info = info
 		self.bounds = bounds
-		self.snp = []
+		self.snp = list()
+		self.genome = []
 
 	def link(self, snp):
 		self.snp.append(snp)
-
-def genePresent(genes, name):
-	"""genePresent(genes, name) takes a list of Gene objects and a name, then searches the names of the object for the specified object"""
-	for gene in genes:
-		if gene.name == name:
-			return 1
-		else:
-			return 0
-	
+	def genomeBound(self, bounds):
+		self.genome = bounds
 
 # argparse
 parser = argparse.ArgumentParser(description="""Input a dual-sample linked vcf file and a gff file. Find where the SNP
@@ -77,11 +71,12 @@ if args.output is None:
 else:
 	new_file = args.output
 
-genes = []
-gene_count = []
-gene_info = []
-gene_bounds = list()
-snp_loc = []
+#genes = []
+#gene_count = []
+#gene_info = []
+#gene_bounds = list()
+#snp_loc = []
+genes = dict()
 g_count = 0
 d_count = 0
 first_flag = 0
@@ -101,6 +96,7 @@ for d_row in dual:
 	d_count += 1
 	if d_count == 4:
 		pdb.set_trace()
+	snp_loc = d_row[1]
 	# check for the 3rd (zero-based) column if is gene
 	# check if the dual bp is inside the range of the gene
 	for g_row in gene:
@@ -111,20 +107,22 @@ for d_row in dual:
 		if g_row[3][0:4] == "gene":
 			# check the ranges
 			if int(d_row[1]) >= int(g_row[1]) and int(d_row[1]) <= int(g_row[2]):
+				name = g_row[3]
+				count = 1
+				info = g_row[7]
+				bounds = [int(g_row[1]), int(g_row[2])]
+
 				# inside the range
 				try:
 					pdb.set_trace()
-					genes.index(g_row[3]) # if gene already exists, then increment the count
-					gene_count[genes.index(g_row[3])] += 1
-					snp_loc.append(d_row[1])
+					genes[name].count += 1
+					genes[name].count
+					genes[name].link(snp_loc)
 					break
-				except ValueError: # otherwise append the gene and increment from 0
+				except KeyError:
 					pdb.set_trace()
-					genes.append(g_row[3])
-					gene_count.append(1)
-					gene_info.append(g_row[7])
-					gene_bounds.append([int(g_row[1]), int(g_row[2])])
-					snp_loc.append(d_row[1])
+					genes[name] = Gene(name, count, info, bounds)
+					genes[name].link(snp_loc)
 					break
 		# 1 and 7 from dual
 
