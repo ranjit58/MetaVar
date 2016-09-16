@@ -11,6 +11,29 @@ import pdb
 __author__="Brody DeSilva, Ranjit Kumar"
 __email__="bdesilva@uab.edu, rkumar@uab.edu"
 
+# gene class
+# can always use Gene class with dictionary of name to access the gene
+class Gene:
+	"""A class for carrying gene information"""
+	def __init__(self, name, count, info, bounds):
+		self.name = name
+		self.count = count
+		self.info = info
+		self.bounds = bounds
+		self.snp = []
+
+	def link(self, snp):
+		self.snp.append(snp)
+
+def genePresent(genes, name):
+	"""genePresent(genes, name) takes a list of Gene objects and a name, then searches the names of the object for the specified object"""
+	for gene in genes:
+		if gene.name == name:
+			return 1
+		else:
+			return 0
+	
+
 # argparse
 parser = argparse.ArgumentParser(description="""Input a dual-sample linked vcf file and a gff file. Find where the SNP
 differences lie in the genes of the GFF file and output in a table format.""")
@@ -57,42 +80,68 @@ else:
 genes = []
 gene_count = []
 gene_info = []
+gene_bounds = list()
+snp_loc = []
+g_count = 0
+d_count = 0
+first_flag = 0
 
 # open the vcf and gff files or 8 column bed file
 # columns 1, 2, 3, 7 from bed
 # columns   from gff
-with open(args.dual) as d, open(args.gff) as g, open(new_file) as out:
-	dual = csv.reader(d, '\t')
-	gene = csv.reader(g, '\t')
-	for d_row in dual:
-		# check for the 3rd (zero-based) column if is gene
-		# check if the dual bp is inside the range of the gene
-		for g_row in gene: # can make this quicker by only checking until a gene is inside region then next is outside
-			# check for each one
-			pdb.set_trace()
-			if d_row[3][0:3] == 'gene':
-				# check the ranges
-				if d_row[1] < g_row[1] and d_row[2] > g_row[1]:
-					# inside the range
-					# put into an output table
-					if genes.index(d_row[3]): # if gene already exists, then increment the count
-						gene_count[genes.index(d_row[3])] += 1
-					else: # otherwise append the gene and increment from 0
-						genes.append(d_row[3])
-						gene_count.append(1)
-						gene_info.append(g_row[7])
-			
-			# 1 and 7 from dual
+with open(args.dual) as d, open(args.gene) as g:
+	dual = list(csv.reader(d, delimiter="\t"))
+	gene = list(csv.reader(g, delimiter="\t"))
+
+# grab the data
+for d_row in dual:
+	if first_flag == 0:
+		first_flag = 1
+		continue
+	d_count += 1
+	if d_count == 4:
+		pdb.set_trace()
+	# check for the 3rd (zero-based) column if is gene
+	# check if the dual bp is inside the range of the gene
+	for g_row in gene:
+		for i in range(0, g_count): # assumes each file is ordered
+			continue # basically since ordered start off where left off
+		g_count += 1
+		# check for each one
+		if g_row[3][0:4] == "gene":
+			# check the ranges
+			if int(d_row[1]) >= int(g_row[1]) and int(d_row[1]) <= int(g_row[2]):
+				# inside the range
+				try:
+					pdb.set_trace()
+					genes.index(g_row[3]) # if gene already exists, then increment the count
+					gene_count[genes.index(g_row[3])] += 1
+					snp_loc.append(d_row[1])
+					break
+				except ValueError: # otherwise append the gene and increment from 0
+					pdb.set_trace()
+					genes.append(g_row[3])
+					gene_count.append(1)
+					gene_info.append(g_row[7])
+					gene_bounds.append([int(g_row[1]), int(g_row[2])])
+					snp_loc.append(d_row[1])
+					break
+		# 1 and 7 from dual
 
 
-# either open each file and read in all the data needed or keep both files open as checking (first sounds better)
+
+
+with open(new_file, 'w+') as out:
+	pass
+	# output the information
+	# want to save the gene start and end, gene hit count, gene information, SNP location
 
 
 
 
 
 
-
+pdb.set_trace()
 
 
 if args.verbose:
