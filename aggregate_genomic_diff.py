@@ -71,37 +71,40 @@ if args.output is None:
 else:
 	new_file = args.output
 
-#genes = []
-#gene_count = []
-#gene_info = []
-#gene_bounds = list()
-#snp_loc = []
 genes = dict()
+first_flag = 0
 g_count = 0
 d_count = 0
-first_flag = 0
-
 # open the vcf and gff files or 8 column bed file
 # columns 1, 2, 3, 7 from bed
+# if bed, then set the numbers equal to the bed columns
+
 # columns   from gff
+# if gff, then set the numbers equal to the gff columns
+
 with open(args.dual) as d, open(args.gene) as g:
 	dual = list(csv.reader(d, delimiter="\t"))
 	gene = list(csv.reader(g, delimiter="\t"))
 
 # grab the data
 for d_row in dual:
+	g_count2 = g_count
 	if first_flag == 0:
 		first_flag = 1
 		continue
 	d_count += 1
-	if d_count == 4:
-		pdb.set_trace()
+	if args.verbose:
+		t1 = time.time()
 	snp_loc = d_row[1]
+
+	if d_count == 16:
+		pass
 	# check for the 3rd (zero-based) column if is gene
 	# check if the dual bp is inside the range of the gene
-	for g_row in gene:
-		for i in range(0, g_count): # assumes each file is ordered
-			continue # basically since ordered start off where left off
+	while True:
+		g_row = gene[g_count]
+#		for i in range(0, g_count): # assumes each file is ordered
+#			continue # basically since ordered start off where left off
 		g_count += 1
 		# check for each one
 		if g_row[3][0:4] == "gene":
@@ -114,34 +117,46 @@ for d_row in dual:
 
 				# inside the range
 				try:
-					pdb.set_trace()
 					genes[name].count += 1
-					genes[name].count
 					genes[name].link(snp_loc)
+					if args.verbose:
+						pass
+						#print(str(time.time()-t1) + '\t' + str(g_count - g_count2))
+					g_count += -1
 					break
 				except KeyError:
-					pdb.set_trace()
 					genes[name] = Gene(name, count, info, bounds)
 					genes[name].link(snp_loc)
+					if args.verbose:
+						pass
+						#print(str(time.time()-t1) + '\t' + str(g_count - g_count2))
+					g_count += -1
 					break
+		if g_count >= len(gene): # not all snps map to a gene
+			if args.verbose:
+				print('SNP\t' + str(d_row[1]) + '\tis not mapped to any gene.')
+			g_count = g_count2
+			break
 		# 1 and 7 from dual
 
 
 
 
 with open(new_file, 'w+') as out:
-	pass
+	for gene in genes:
+		out.write(genes[gene].name + '\t' + str(genes[gene].count) + '\t' +
+		str(genes[gene].bounds[0]) + ',' + str(genes[gene].bounds[1]) + '\t')
+		firstsnp = True
+		for snp in genes[gene].snp:
+			if firstsnp:
+				out.write(snp)
+				firstsnp = False
+			else:
+				out.write(',' + snp)
+		out.write('\t' + genes[gene].info + '\n')
 	# output the information
 	# want to save the gene start and end, gene hit count, gene information, SNP location
 
-
-
-
-
-
-pdb.set_trace()
-
-
 if args.verbose:
-	elapse = timeout-time.time()
+	elapse = time.time() - timein
 	print('Elapse time in seconds:\t' + str(elapse) + '.\n')
