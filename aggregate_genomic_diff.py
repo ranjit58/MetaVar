@@ -25,8 +25,6 @@ class Gene:
 
 	def link(self, snp):
 		self.snp.append(snp)
-	def genomeBound(self, bounds):
-		self.genome = bounds
 
 # argparse
 parser = argparse.ArgumentParser(description="""Input a dual-sample linked vcf file and a gff file. Find where the SNP
@@ -94,6 +92,13 @@ with open(args.dual) as d, open(args.gene) as g:
 	dual = list(csv.reader(d, delimiter="\t"))
 	gene = list(csv.reader(g, delimiter="\t"))
 
+# get some other data
+genome = dict()
+genome['name'] = gene[len(gene)-1][0] # assumes that the first rows will have header information, so use last
+# below assumption could be wrong - might need to look for the final region (if the gene or CDS does not reach to end)
+genome['bounds'] = [1, gene[len(gene)-1][g_col[1]]] # assumes that the last row will have the length of the genome
+
+
 # grab the data
 for d_row in dual:
 	g_count2 = g_count
@@ -150,7 +155,9 @@ for d_row in dual:
 		# 1 and 7 from dual
 
 with open(new_file, 'w+') as out:
-	out.write('#name\tcount\tbounds[start:stop]\tsnps\tinfo\n')
+	out.write('##name\tcount\tbounds[start:stop]\tsnps\tinfo\n')
+	out.write('#Genome Name\t' + genome['name'] + '\n')
+	out.write('#Genome Bounds\t' + str(genome['bounds'][0]) + ',' + str(genome['bounds'][1]) + '\n')
 	for gene in genes:
 		out.write(genes[gene].name + '\t' + str(genes[gene].count) + '\t' +
 		str(genes[gene].bounds[0]) + ',' + str(genes[gene].bounds[1]) + '\t')
@@ -168,4 +175,5 @@ with open(new_file, 'w+') as out:
 if args.verbose:
 	elapse = time.time() - timein
 	print('Elapse time in seconds:\t' + str(elapse) + '.\n')
-	print('Number of SNPS not gene-mapped\t' + str(not_mapped))
+	print('Number of SNPs not gene-mapped\t' + str(not_mapped))
+	print('Number of SNPs gene-mapped\t' + str(len(genes)))
