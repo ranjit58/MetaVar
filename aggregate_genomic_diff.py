@@ -30,17 +30,19 @@ class Gene:
 
 # argparse
 parser = argparse.ArgumentParser(description="""Input a dual-sample linked vcf file and a gff file. Find where the SNP
-differences lie in the genes of the GFF file and output in a table format.""")
+	differences lie in the genes of the GFF file and output in a table format.""")
 parser.add_argument('dual',help="""Specify a dual-sample vcf file for reading and pulling SNP bp locations.""")
 parser.add_argument('gene',help="""Specify a gff file or a bed file for reading and pulling gene information.""")
+parser.add_argument('-b','--bed',help="""If your input is an 8 column bed file, use this parameter.""",
+	action='store_true')
 parser.add_argument('-c','--column',help="""Specify the column number of the base pair locations for the SNP
-changes.""", type=int)
+	changes.""", type=int)
 parser.add_argument('-p','--position',help="""If the samples are not the last 2 columns of the vcf file, indicate the 
-column number (from left to right) of the first vcf sample (this will assume that the second vcf file is directly        
-following the first). Or specify the first vcf sample column number and the second vcf sample column                     
-number.""",nargs='+', type=int)                                                                                         
+	column number (from left to right) of the first vcf sample (this will assume that the second vcf file is directly        
+	following the first). Or specify the first vcf sample column number and the second vcf sample column                     
+	number.""",nargs='+', type=int)                                                                                         
 parser.add_argument('-v','--verbose',help="""Verbose mode will output additional information about the program
-execution.""", action='store_true')
+	execution.""", action='store_true')
 parser.add_argument('-o','--output',help="""Specify the name of the output file.""")
 args = parser.parse_args()
 
@@ -67,20 +69,26 @@ if args.position is not None:
 		first_flag = True
 
 if args.output is None:
-	new_file = args.dual + '.tbl'
+	new_file = args.dual + ".tbl"
 else:
 	new_file = args.output
 
+
+# Initialize some important variables
 genes = dict()
 first_flag = 0
 g_count = 0
 d_count = 0
-# open the vcf and gff files or 8 column bed file
-# columns 1, 2, 3, 7 from bed
-# if bed, then set the numbers equal to the bed columns
+d_col = 1
+not_mapped = 0
 
-# columns   from gff
-# if gff, then set the numbers equal to the gff columns
+# open the vcf and gff files or 8 column bed file
+if args.bed:
+	# columns 1, 2, 3, 7 from bed
+	g_col = [1, 2, 3, 7] # 0:range start; 1:range end; 2:gene name; 3:information
+else:
+	# columns  from gff
+	g_col = [3, 4, 2, 8] # 0:range start; 1:range end; 2:gene name; 3:information
 
 with open(args.dual) as d, open(args.gene) as g:
 	dual = list(csv.reader(d, delimiter="\t"))
@@ -89,13 +97,12 @@ with open(args.dual) as d, open(args.gene) as g:
 # grab the data
 for d_row in dual:
 	g_count2 = g_count
-	if first_flag == 0:
-		first_flag = 1
-		continue
 	d_count += 1
+	if d_row[0][0] == '#':
+		continue
 	if args.verbose:
 		t1 = time.time()
-	snp_loc = d_row[1]
+	snp_loc = d_row[d_col]
 
 	if d_count == 16:
 		pass
@@ -106,14 +113,16 @@ for d_row in dual:
 #		for i in range(0, g_count): # assumes each file is ordered
 #			continue # basically since ordered start off where left off
 		g_count += 1
+		if g_row[0][0] == '#':
+			continue
 		# check for each one
-		if g_row[3][0:4] == "gene":
+		if g_row[g_col[2]][0:4] == "gene":
 			# check the ranges
-			if int(d_row[1]) >= int(g_row[1]) and int(d_row[1]) <= int(g_row[2]):
-				name = g_row[3]
+			if int(d_row[d_col]) >= int(g_row[g_col[0]]) and int(d_row[d_col]) <= int(g_row[g_col[1]]):
+				name = g_row[g_col[2]]
 				count = 1
-				info = g_row[7]
-				bounds = [int(g_row[1]), int(g_row[2])]
+				info = g_row[g_col[3]]
+				bounds = [int(g_row[g_col[0]]), int(g_row[g_col[1]])]
 
 				# inside the range
 				try:
@@ -134,15 +143,14 @@ for d_row in dual:
 					break
 		if g_count >= len(gene): # not all snps map to a gene
 			if args.verbose:
-				print('SNP\t' + str(d_row[1]) + '\tis not mapped to any gene.')
+				not_mapped += 1
+				print('SNP\t' + str(d_row[d_col]) + '\tis not mapped to any gene.')
 			g_count = g_count2
 			break
 		# 1 and 7 from dual
 
-
-
-
 with open(new_file, 'w+') as out:
+	out.write('#name\tcount\tbounds[start:stop]\tsnps\tinfo\n')
 	for gene in genes:
 		out.write(genes[gene].name + '\t' + str(genes[gene].count) + '\t' +
 		str(genes[gene].bounds[0]) + ',' + str(genes[gene].bounds[1]) + '\t')
@@ -160,3 +168,4 @@ with open(new_file, 'w+') as out:
 if args.verbose:
 	elapse = time.time() - timein
 	print('Elapse time in seconds:\t' + str(elapse) + '.\n')
+	print('Number of SNPS not gene-mapped\t' + str(not_mapped))
