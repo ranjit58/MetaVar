@@ -8,9 +8,11 @@ import csv
 import sys
 import pdb
 
-def format_row(row):
-	return '%s' % '\t'.join(map(str, row)) + '\n'
-
+def format_row(row, num):
+	if num == 0:
+		return row[1] + '\t' + str(1) + '\t' + str(0) + '\n'
+	else:
+		return row[1] + '\t' + str(0) + '\t' + str(1) + '\n'
 
 # argparse
 parser = argparse.ArgumentParser(description="""Find the SNP differences between the two samples provided in the
@@ -63,11 +65,11 @@ with open(args.input) as f, open(new_file, 'w+') as out:
 			p_two = len(row) - 1
 			p_one = p_two - 1
 			first_flag = True
-			out.write(format_row(row))
+			out.write('#' + row[1] + '\t' + row[p_one] + '\t' + row[p_two] + '\n')
 			count = 1
 			continue # skip the header row
 		if count == 0:
-			out.write(format_row(row))
+			out.write('#' + row[1] + '\t' + row[p_one] + '\t' + row[p_two] + '\n')
 			count = 1
 			continue
 		# check the two positions
@@ -76,9 +78,9 @@ with open(args.input) as f, open(new_file, 'w+') as out:
 			# if is any combination with '.' (meaning no information)
 			continue
 		elif int(row[p_one][0]) == 1 and int(row[p_two][0]) == 0:
-			out.write(format_row(row))
+			out.write(format_row(row, 0))
 		elif int(row[p_one][0]) == 0 and int(row[p_two][0]) == 1:
-			out.write(format_row(row))
+			out.write(format_row(row, 1))
 		else:
 			# either 1 and 1 or 0 and 0
 			continue
