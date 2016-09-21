@@ -29,8 +29,6 @@ for csv in range(0, len(args.file)):
 names = combined.columns.values[:]
 combined = pd.concat([combined, combined.sum(axis=1, skipna=True)], axis=1)
 combined.columns.values[-1] = 'Sum'
-pdb.set_trace()
 out = '_'.join(map(str,names)) + '.txt.tbl'
 combined.to_csv(path_or_buf=out, sep='\t', na_rep='.')
-pdb.set_trace()
 
