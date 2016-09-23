@@ -104,6 +104,11 @@ g.loc[:, 'Count'] = g[range(2, len(g.columns))].astype(bool).sum(axis=1)
 # print out the other file
 f = pd.concat([f, f.sum(axis=1, skipna=True)], axis=1)
 f.columns.values[-1] = 'Sum'
+
+# rearrange the columns
+cols = f.columns.tolist()
+cols = [cols[-2]] + cols[:-2] + [cols[-1]]
+f = f[cols]
 f.to_csv(path_or_buf=out, sep='\t', na_rep='.')
 
 out = out + '.comb'
