@@ -23,7 +23,7 @@ parser.add_argument('-v','--verbose',help="""Displays verbose output.""",action=
 args = parser.parse_args()
 
 timein = time.time()
-
+pdb.set_trace()
 # f is the combined file
 files = list()
 for csv in range(0, len(args.file)):
@@ -34,7 +34,8 @@ for csv in range(0, len(args.file)):
 		f = pd.concat([f, files[csv]], axis=1)
 
 names = f.columns.values[:]
-out = '_'.join(map(str,names)) + '.txt.tbl'
+
+out = args.gene.name.split('/')[-1][0:-4] + '_' + '_'.join(map(str,names)) + '.tbl'
 # f.to_csv(path_or_buf=out, sep='\t', na_rep='.')
 
 # read in the pairwise differenced files
@@ -111,7 +112,7 @@ cols = [cols[-2]] + cols[:-2] + [cols[-1]]
 f = f[cols]
 f.to_csv(path_or_buf=out, sep='\t', na_rep='.')
 
-out = out + '.comb'
+out = out[0:-4] + '.comb'
 g.drop(['start', 'stop'], axis=1, inplace=True)
 g = g[(g.T != 0).any()]
 g.to_csv(path_or_buf=out, sep='\t')
