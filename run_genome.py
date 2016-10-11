@@ -19,6 +19,7 @@ inter = args.intermediate # intermediate files, default 0
 vcf = args.vcf
 gene = args.gene
 g_file_type = args.type
+final = 1 # print out final files
 
 # if args exists, then pipe_line_flag is True
 try:
@@ -49,9 +50,6 @@ for pair in pairs:
 
 	snp_count.append(names[:])
 	all_data.append(data)
-snp_count = ''.join(['_'.join([str(x[0]) + '_' + str(x[1]) for x in snp_count]), '.txt'])
-g_count = snp_count + '.comb'
-
 
 extracted_time = clock()
 print('Start : Extracted, elapse: ' + str(extracted_time - start) + ' sec.\n')
@@ -61,7 +59,6 @@ import aggregate_genomic_diff2
 from aggregate_genomic_diff2 import pos_tbl, gene_dict
 aggregated_time = clock()
 print('Extract : Aggregate, elapse: ' + str(aggregated_time - extracted_time) + ' sec.\n')
-pdb.set_trace()
 
 
 
