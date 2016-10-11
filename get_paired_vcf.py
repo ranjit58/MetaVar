@@ -83,6 +83,8 @@ else:
 
 with open(args.multi) as f,  open(output_name, 'w+') as out:
 	multi  = csv.reader(f, delimiter="\t")
+	import pdb
+	pdb.set_trace()
 	for row in multi:
 		if row[0][1] != '#':
 			# column 9 starts the samples
@@ -129,3 +131,5 @@ if args.verbose:
 	timeout = time.time()
 	elapse = timeout-timein
 	print('Elapse time in seconds:\t' + str(elapse) + '.\n')
+	ut.write(row[init_col] + '\t' + row[final_col] + '\n')
+

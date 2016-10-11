@@ -23,7 +23,6 @@ parser.add_argument('-v','--verbose',help="""Displays verbose output.""",action=
 args = parser.parse_args()
 
 timein = time.time()
-pdb.set_trace()
 # f is the combined file
 files = list()
 for csv in range(0, len(args.file)):
