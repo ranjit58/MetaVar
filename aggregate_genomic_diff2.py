@@ -2,7 +2,7 @@ from csv import reader
 import numbers
 import pdb
 try:
-	from __main__ import pipeline_flag, final, all_data, gene, g_file_type, g_count, snp_count
+	from __main__ import pipeline_flag, final, all_data, gene, g_file_type, g_count, snp_count, final_name
 except ImportError:
 	# if running as a script
 	pipeline_flag = 0
@@ -28,8 +28,11 @@ else:
 		names.append(x[1])
 	names.insert(0, 'gene')
 	names.insert(0, 'snp')
-	snp_count = ''.join(['_'.join([str(x[0]) + '_' + str(x[1]) for x in snp_count]), '.txt'])
-	g_count = snp_count + '.comb'
+	names.append('sum')
+	snp_count = final_name + '_coord.txt'
+	g_count = final_name + '_gene.txt'
+	#snp_count = ''.join(['_'.join([str(x[0]) + '_' + str(x[1]) for x in snp_count]), '.txt'])
+	#g_count = snp_count + '.comb'
 
 
 # read in gene file
@@ -84,6 +87,8 @@ if final:
 		print_to_file(pos_tbl, s)
 
 names.remove('snp') # set names to be acceptable for the gene_dict
+names.remove('sum')
+names.append('count')
 
 snps_per_gene = {snp: gene for (snp, gene) in snps_to_genes} # get dict of snp keys with gene values
 gene_dict = {gene: [] for (snp, gene) in snps_to_genes}

@@ -112,7 +112,7 @@ with open(vcf) as f:
 		with open(output_name[0], 'w+') as gpw:
 			data = [[row[0:8], row[pos[0]], row[pos[1]]] for row in vcf if row[0][0] != '#']
 			print_pairwise(data, gpw, headers[0:8] + names)
-	
+
 	# get the col info and position number
 	data = [[row[pos[0]], row[pos[1]], row[1]] for row in vcf if row[0][0] != "#" if row[pos[0]][0] is '1' or row[pos[1]][0] is '1']
 	# filter data
