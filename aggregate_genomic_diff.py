@@ -1,121 +1,120 @@
-#! /bin/python
-# Takes differenced pairwise samples and combines them into a table format
-# Does not need to preserve the bp changes, only an indication of change or no change
-# Table design: coordinate|annotation|1|2|3|4|Sum (samples 1, 2, 3, 4)
-
-# POS is column 1 (zero-based)
-# Identify if ref or sample has SNP
-# record 1 for has SNP and 0 for no SNP
-
-import pandas as pd
-import numpy as np
-import argparse
-import sys
+from csv import reader
+import numbers
 import pdb
-import time
+try:
+	from __main__ import pipeline_flag, final, all_data, gene, g_file_type, g_count, snp_count, final_name
+except ImportError:
+	# if running as a script
+	pipeline_flag = 0
 
-parser = argparse.ArgumentParser(description="""Takes pairwise vcf files and outputs into a combined table.""")
-parser.add_argument('file',type=argparse.FileType('r'), nargs='+',help="""Input pairwise files for reading.""")
-parser.add_argument('gene',type=argparse.FileType('r'),help="""This is a gff file.""")
-parser.add_argument('-b','--bed',help="""If using an 8 column bed file, specify with this
-argument.""",action='store_true')
-parser.add_argument('-v','--verbose',help="""Displays verbose output.""",action='store_true')
-args = parser.parse_args()
+def print_to_file(tbl, path):
+	for row in tbl:
+		path.write('\t'.join([str(col) for col in row]) + '\n')
 
-timein = time.time()
-# f is the combined file
-files = list()
-for csv in range(0, len(args.file)):
-	files.append(pd.read_csv(args.file[csv], delimiter='\t', index_col=0))
-	if csv == 0:
-		f = files[0]
-	else:
-		f = pd.concat([f, files[csv]], axis=1)
 
-names = f.columns.values[:]
 
-out = args.gene.name.split('/')[-1][0:-4] + '_' + '_'.join(map(str,names)) + '.tbl'
-# f.to_csv(path_or_buf=out, sep='\t', na_rep='.')
+if not pipeline_flag:
+	final = 1
+	parser = argparse.ArgumentParser(description="""Take pairwise vcf files and outputs into a combined table.""")
+	parser.add_argument('file',type=argparse.FileType('r'), nargs='+',help="""Input pairwise files for reading.""") 
+	parser.add_argument('gene',type=argparse.FileType('r'),help="""This is a gff file.""")
+	parser.add_argument('-b','--bed',help="""If using an 8 column bed file, specify with this argument.""",action='store_true')
+	parser.add_argument('-v','--verbose',help="""Displays verbose output.""",action='store_true') 
+else:
+	# get column names
+	names = list()
+	for x in snp_count:
+		names.append(x[0])
+		names.append(x[1])
+	names.insert(0, 'gene')
+	names.insert(0, 'snp')
+	names.append('sum')
+	snp_count = final_name + '_coord.txt'
+	g_count = final_name + '_gene.txt'
+	#snp_count = ''.join(['_'.join([str(x[0]) + '_' + str(x[1]) for x in snp_count]), '.txt'])
+	#g_count = snp_count + '.comb'
 
-# read in the pairwise differenced files
-# create a table with that data
-# output both the [gnee : SNP : indicator] file and the [gene : indicators : count] file
 
-# Read in output of the previous script
+# read in gene file
+with open(gene) as g:
+	genes = list(reader(g, delimiter='\t'))
+if g_file_type:
+	pass
+else:
+	start = 3
+	end = 4
+	gtype = 2
+	glength = 9
 
-# POS is column 1 (zero-based)
-# Identify if ref or sample has SNP
-# record 1 for has SNP and 0 for no SNP
+# get the gene name, gene start position, gene end position
+genes = [[gene[gtype], int(gene[start]), int(gene[end])] for gene in genes if len(gene) is glength and gene[gtype][0:4] == 'gene']
 
-def inRange(bounds, num):
-	if bounds[0] <= num <= bounds[1]:
-		return True
-	else:
-		return False
+# identify unique snps, store in table, check if each extracted file in all_data has the snp, if yes increment in row
+unique_snps = set() # as rows, then push the 1 or 0 for each file in the extracted data (in a specified order)
+for col in all_data:
+	unique_snps.update([sub[0] for sub in col]) # get the unique snps for each
 
-def incrementSamples(g, f, gene, pos):
-	sample = f.iloc[pos][f.iloc[pos] == 1].index
-	for i in range(0, len(sample)):
-		s = sample[i]
-		g_ind = g.index[gene]
-		g_v = g.loc[g_ind, s]
-		g.set_value(g_ind, s, g_v + 1)
+# match each snp to a gene
+snps_to_genes = [[snp, gene[0]] for snp in unique_snps for gene in genes if gene[1] <= snp and gene[2] >= snp]
+snps_to_genes.sort()
 
-if args.bed:
-	g_cols = [1,2,3]
-	in_col = 2
-else: # gff
-	g_cols = [2,3,4]
-	in_col = 0
+pos_tbl = []
+flag = 0
 
-# read in the gene file
-# g = pd.read_csv(args.gene, delimiter='\t', index_col=2, skiprows=3, names=range(0,3), usecols=g_cols)
-g = pd.read_csv(args.gene, delimiter='\t', index_col=in_col, comment='#', names=["gene","start","stop"], usecols=g_cols, converters={"start":int, "stop":int})
-g = g[g.index.str[0:4] == 'gene']
+# identify the snp:gene counts for extracted data
+for pos in snps_to_genes: # go by row
+	row = [pos[0], pos[1]]
+	for col in all_data: # by column
+		for sub in col: # add element to list
+			if sub[0] == pos[0]:
+				row.append(sub[1])
+				row.append(sub[2])
+				flag = 1 # stop searching for the snp
+				break # continue to next col (next extracted pairwise vcf)
+		if flag != 1: # no snp was found, so report no snp
+			row.append('.')
+			row.append('.')
+		else:
+			flag = 0
+	
+	row.append(sum([x for x in row[2:] if isinstance(x, numbers.Number)])) # get the count
+	pos_tbl.append(row)
 
-# add the column names in f to g
-for col in f.columns:
-	g.loc[:, col] = 0
+if final:
+	# print to file
+	with open(snp_count, 'w+') as s:
+		s.write('\t'.join([col for col in names]) + '\n')
+		print_to_file(pos_tbl, s)
 
-# do merging of the snps into the genes
-# implement the counting that assumes ordered SNPs in terms of position
-gene = 0
-g_count = 0
+names.remove('snp') # set names to be acceptable for the gene_dict
+names.remove('sum')
+names.append('count')
 
-for pos in  range(0, len(f.index)):
-	g_count = gene
-	while True: # while loop so can access the index
-		gene += 1
-		#gene = range(g_count, len(g.index))
-		bounds = [g.iloc[gene][0], g.iloc[gene][1]]
-		if inRange(bounds, f.index[pos]):
-			incrementSamples(g, f, gene, pos)
-			f.set_value(f.index[pos], "Gene", g.index[gene])
-			gene -= 1 # deal with the next SNP being in the same gene
-			break
-		elif gene == len(g.index) - 1:
-			if args.verbose:
-				print('SNP\t' + str(pos) + '\tat position:\t'  + str(f.index[pos]) + '\tis not in any gene.')
-			gene = g_count - 1 # since has run through the entire list, reset to previous found gene
-			f.set_value(f.index[pos], "Gene", '.')
-			break
+snps_per_gene = {snp: gene for (snp, gene) in snps_to_genes} # get dict of snp keys with gene values
+gene_dict = {gene: [] for (snp, gene) in snps_to_genes}
+# identify the number of snps per gene for extracted data
+for col in all_data:
+	temp_gene_dict = {gene: [0, 0] for (snp, gene) in snps_to_genes}
+	for snp in col:
+		try:
+			gene = snps_per_gene[snp[0]]
+			temp_gene_dict[gene] = [temp_gene_dict[gene][0] + snp[1], temp_gene_dict[gene][1] + snp[2]]
+		except KeyError:
+			continue # for snps not located in genes
+	# add temp to real
+	for gene in gene_dict:
+		gene_dict[gene].append(temp_gene_dict[gene])
 
-g.loc[:, 'Count'] = g[range(2, len(g.columns))].astype(bool).sum(axis=1)
-# print out the other file
-f = pd.concat([f, f.sum(axis=1, skipna=True)], axis=1)
-f.columns.values[-1] = 'Sum'
+# get count for all the genes
+for gene in gene_dict:
+	gene_dict[gene] = reduce(lambda x,y: x + y, gene_dict[gene])
+	gene_dict[gene].append(sum(x > 0 for x in gene_dict[gene]))
 
-# rearrange the columns
-cols = f.columns.tolist()
-cols = [cols[-2]] + cols[:-2] + [cols[-1]]
-f = f[cols]
-f.to_csv(path_or_buf=out, sep='\t', na_rep='.')
+if final:
+	# print to file
+	with open(g_count, 'w+') as g:
+		g.write('\t'.join([col for col in names]) + '\n')
+		for gene in gene_dict:
+			g.write(gene + '\t' + '\t'.join(str(x) for x in gene_dict[gene]) + '\n')
 
-out = out[0:-4] + '.comb'
-g.drop(['start', 'stop'], axis=1, inplace=True)
-g = g[(g.T != 0).any()]
-g.to_csv(path_or_buf=out, sep='\t')
-
-if args.verbose:
-	print('Elapse: ' + str(time.time()-timein))
 

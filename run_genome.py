@@ -51,12 +51,12 @@ for pair in pairs:
 	# run the get_paired script for each file
 	if pairs.index(pair) > 0:
 		# for all items except the first
-		reload(get_paired_vcf2)
-		from get_paired_vcf2 import data, names
+		reload(get_paired_vcf)
+		from get_paired_vcf import data, names
 	else:
 		# run it for the first time
-		import get_paired_vcf2
-		from get_paired_vcf2 import data, names
+		import get_paired_vcf
+		from get_paired_vcf import data, names
 
 	snp_count.append(names[:])
 	all_data.append(data)
@@ -65,8 +65,8 @@ extracted_time = clock()
 #print('Start : Extracted, elapse: ' + str(extracted_time - start) + ' sec.\n')
 
 # aggregate all this data
-import aggregate_genomic_diff2
-from aggregate_genomic_diff2 import pos_tbl, gene_dict
+import aggregate_genomic_diff
+from aggregate_genomic_diff import pos_tbl, gene_dict
 aggregated_time = clock()
 #print('Extract : Aggregate, elapse: ' + str(aggregated_time - extracted_time) + ' sec.\n')
 

@@ -14,46 +14,63 @@ import argparse
 import csv
 import pdb
 import sys
+try:
+	# if running as a pipeline, will have a main function call
+	from __main__ import pipeline_flag, pair, vcf, inter
+except ImportError:
+	# if running as a script
+	pipeline_flag = 0
 
 __author__="Brody DeSilva and Ranjit Kumar"
 __email__="bdesilva@uab.edu, rkumar@uab.edu"
 
-def print_samples(rows, offset):
+def print_extracted(data, out, headers, names):
 	"This definition will print out the samples in a provided multi-sample vcf, given the row of the file.\n"
-	for col in rows[offset + 1:-1]:
-		print(str(rows.index(col) - offset) + '.\t' + col + '\t')
+	out.write('#' + headers[0][1] + '\t' + names[0] + '\t' + names[1] + '\n')
+	for sub in data:
+		out.write(str(sub[0]) + '\t' + str(sub[1]) + '\t' + str(sub[2]) + '\n')
+	return
+def print_pairwise(data, out, headers):
+	for el in headers:
+		out.write(el + '\t')
+	out.write('\n')
+	for row in data:
+		for sub in row:
+			out.write(str(sub) + '\t')
+		out.write('\n')
 	return
 
-parser = argparse.ArgumentParser(description="""Extract named samples from a Multi-Sample VCF file and output as a 2 column
-vcf file.""")
-parser.add_argument('multi',help="""Specify a multi-sample vcf file for reading and separating individual samples.""")
-parser.add_argument('t_init',help="""Specify the name of the initial time vcf sample in the multi-sample vcf file.""")
-parser.add_argument('t_final',help="""Specify the name of the second time vcf sample in the multi-sample vcf file.""")
-parser.add_argument('-q', '--query',help="""Query the sample names of a provided multi-sample vcf
-file.""",action='store_true')
-parser.add_argument('-v', '--verbose',help="""Verbose mode will output additional information about how the program
-	runs.""",action='store_true')
-parser.add_argument('-o', '--output',help="""Specify the name of the output file, otherwise it will be the sample 
-names.""")
-args = parser.parse_args()
-
-if args.verbose:
-	import time
-	timein = time.time()
-
-
-header_offset = 8 # the number of columns until the first sample
-
+if not pipeline_flag:
+	parser = argparse.ArgumentParser(description="""Extract named samples from a Multi-Sample VCF file and output as a 2 column
+	vcf file.""")
+	parser.add_argument('multi',help="""Specify a multi-sample vcf file for reading and separating individual samples.""")
+	parser.add_argument('t_init',help="""Specify the name of the initial time vcf sample in the multi-sample vcf file.""")
+	parser.add_argument('t_final',help="""Specify the name of the second time vcf sample in the multi-sample vcf file.""")
+	parser.add_argument('-q', '--query',help="""Query the sample names of a provided multi-sample vcf file.""",action='store_true')
+	parser.add_argument('-v', '--verbose',help="""Verbose mode will output additional information about how the program
+		runs.""",action='store_true')
+	parser.add_argument('-o', '--output',help="""Specify the name of the output file, otherwise it will be the sample names.""")
+	args = parser.parse_args()
+	
+	names = [args.t_init, args.t_final] # assume are names not positions
+	vcf = args.multi
+	output = args.output
+	if args.verbose:
+		import time
+		timein = time.time()
+else:
+	names = [pair[0], pair[1]] # assume are names not positions
+	output = None
 
 # logic to determine if is positional or based on the name
 try:
-	int(args.t_init)
+	int(names[0])
 	isposition = True
 except ValueError:
 	isposition = False
 
 try:
-	int(args.t_final)
+	int(names[1])
 	if not isposition:
 		print('Enter either only position or only sample name as the command line parameter.\n')
 		sys.exit()
@@ -61,75 +78,65 @@ except ValueError:
 	if isposition:
 		print('Enter either only position or only sample name as the command line parameter.\n')
 		sys.exit()
-# check for negative number input
-if isposition:
-	print_out_samples = -100 # current design uses the header column numbers, so can compare to a non-sample column
-	if (int(args.t_init) >= -header_offset and int(args.t_init) <= 0) or \
-		(int(args.t_final) >= -header_offset and int(args.t_final) <= 0):
-		args.t_init = print_out_samples
-		args.t_final = print_out_samples
 
-init_flag = 0
-final_flag = 0
+output_name = list()
 
-# read each line
-# find the sample line
-# find the correct samples -> get the column numbers
-# read in descriptor and sample columns
-if args.output is None:
-	output_name = args.t_init + '_' + args.t_final + '.txt'
+# get output names
+if output is None:
+	output_name.append(names[0] + '_' + names[1] + '.txt') # get pairwise vcf
+	output_name.append(output_name[0] + '.diff') # extracted
 else:
-	output_name = args.output
+	output_name.append(output)
+	output_name.append(output + '.diff')
 
-with open(args.multi) as f,  open(output_name, 'w+') as out:
-	multi  = csv.reader(f, delimiter="\t")
-	import pdb
-	pdb.set_trace()
-	for row in multi:
-		if row[0][1] != '#':
-			# column 9 starts the samples
-			# compare the samples to the sample data
-			if init_flag == 0 and final_flag == 0:
-					for header in row:
-						if not isposition and header == args.t_init:
-							init_col = row.index(header)
-							init_flag = 1
-						elif isposition:
-							if row.index(header) - header_offset == int(args.t_init):
-								init_col = row.index(header)
-								init_change_name = header
-								init_flag = 1
-						if not isposition and header == args.t_final:
-							final_col = row.index(header)
-							final_flag = 1
-						elif isposition:
-							if row.index(header) - header_offset == int(args.t_final):
-								final_col = row.index(header)
-								final_change_name = header
-								final_flag = 1
-					if init_flag == 0 or final_flag == 0:
-						print('Input a valid ID for the initial sample and the final sample.\n')
-						print_samples(row, header_offset)
-						sys.exit()
-					
-					for col in row[0:header_offset]:
-						out.write(col + '\t')
-					out.write(row[init_col] + '\t' + row[final_col] + '\n')
-			else:
-				for col in row[0:header_offset]:
-					out.write(col + '\t')
-				out.write(row[init_col] + '\t' + row[final_col] + '\n')
+# read in data
+with open(vcf) as f:
+	vcf  = list(csv.reader(f, delimiter="\t"))
+	headers = [row for row in vcf if row[0] == "#CHROM"]
+	headers = headers[0] # remove outer list
+	if not isposition:
+		try:
+			pos = [headers.index(el) for el in names]
+		except ValueError:
+			print('Sample names cannot be found.\nHere is a list of valid headers found:\n')
+			print(headers)
+			sys.exit()
+	else:
+		if int(names[0]) - 1 in range(len(headers)) and int(names[1]) - 1 in range(len(headers)):
+			pos = [int(names[0]) - 1, int(names[1]) -1]
+		else:
+			print('The position was out of range.\nHere is a list of valid sample column values:\    n')
+			print([el + 1 for el in range(len(headers))])
+			sys.exit()
+	if inter:
+		with open(output_name[0], 'w+') as gpw:
+			data = [[row[0:8], row[pos[0]], row[pos[1]]] for row in vcf if row[0][0] != '#']
+			print_pairwise(data, gpw, headers[0:8] + names)
 
+	# get the col info and position number
+	data = [[row[pos[0]], row[pos[1]], row[1]] for row in vcf if row[0][0] != "#" if row[pos[0]][0] is '1' or row[pos[1]][0] is '1']
+	# filter data
+	data = [[pair[0], pair[1], pair[2]] for pair in data if pair[0][0] is not '.' and pair[1][0] is not '.']
+	# remove double positives
+	data = [[pair[0], pair[1], pair[2]] for pair in data if bool(pair[0][0] is '1') != bool(pair[1][0] is '1')]
+	
+	# rearrange, format, and print
+	temp = [[int(pair[2]), 1, 0] for pair in data if pair[0][0] is '1']
+	temp2 = [[int(pair[2]), 0, 1] for pair in data if pair[0][0] is '0']
+	data = temp + temp2
+	data.sort()
+	if inter:
+		with open(output_name[1], 'w+') as ext:
+			print_extracted(data, ext, headers, names)
 
-if isposition and args.output is None:
-	# rename the file to the correct default name
-	import os
-	output_name_fix = init_change_name + '_' + final_change_name + '.txt'
-	os.rename(output_name, output_name_fix) 
-
-if args.verbose:
-	timeout = time.time()
-	elapse = timeout-timein
-	print('Elapse time in seconds:\t' + str(elapse) + '.\n')
-	ut.write(row[init_col] + '\t' + row[final_col] + '\n')
-
+if not pipeline_flag:
+	if isposition and args.output is None:
+		# rename the file to the correct default name
+		import os
+		output_name_fix = init_change_name + '_' + final_change_name + '.txt'
+		os.rename(output_name, output_name_fix) 
+	if args.verbose:
+		timeout = time.time()
+		elapse = timeout-timein
+		print('Elapse time in seconds:\t' + str(elapse) + '.\n')
+		out.write(row[init_col] + '\t' + row[final_col] + '\n')
