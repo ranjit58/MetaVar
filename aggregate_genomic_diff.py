@@ -47,8 +47,7 @@ else:
 	glength = 9
 
 # get the gene name, gene start position, gene end position
-genes = [[gene[gtype], int(gene[start]), int(gene[end])] for gene in genes if len(gene) is glength and gene[gtype][0:4] == 'gene']
-
+genes = [[gene[gtype], int(gene[start]), int(gene[end])] for gene in genes if len(gene) == glength and gene[gtype][0:4] == 'gene']
 # identify unique snps, store in table, check if each extracted file in all_data has the snp, if yes increment in row
 unique_snps = set() # as rows, then push the 1 or 0 for each file in the extracted data (in a specified order)
 for col in all_data:
@@ -79,7 +78,6 @@ for pos in snps_to_genes: # go by row
 	
 	row.append(sum([x for x in row[2:] if isinstance(x, numbers.Number)])) # get the count
 	pos_tbl.append(row)
-
 if final:
 	# print to file
 	with open(snp_count, 'w+') as s:
@@ -109,7 +107,6 @@ for col in all_data:
 for gene in gene_dict:
 	gene_dict[gene] = reduce(lambda x,y: x + y, gene_dict[gene])
 	gene_dict[gene].append(sum(x > 0 for x in gene_dict[gene]))
-
 if final:
 	# print to file
 	with open(g_count, 'w+') as g:
