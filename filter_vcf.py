@@ -27,11 +27,10 @@ for i in range(0, len(ff)):
 	with open(ff[i]) as fil, open(vcfs[i]) as vcf, open(out_vcf[i], 'w') as out:
 		# filter the filter file for not 'synonymous' or 'unknown'
 		f_csv = list(reader(fil, delimiter='\t'))
-		f_csv = [int(row[4]) for row in f_csv if row[1] != 'nonsynonymous SNV' and row[1] != 'unknown']
+		f_csv = [int(row[4]) for row in f_csv if row[1] != 'synonymous SNV' and row[1] != 'unknown']
 		f_csv.sort()
 		
 		# filter the vcf
 		v_csv = list(reader(vcf, delimiter='\t'))
 		v_csv = [row for row in v_csv if row[0][0] == '#' or int(row[1]) in f_csv]
 		print_to_file(out, v_csv)
-		

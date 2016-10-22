@@ -3,7 +3,7 @@
 #SBATCH --job-name=filterVCF
 #SBATCH --nodes=1
 #SBATCH --share
-#SBATCH --mem-per-cpu=15000
+#SBATCH --mem=20000
 #SBATCH --time=100:00:00
 
 python filter_vcf.py

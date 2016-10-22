@@ -11,7 +11,12 @@ def print_to_file(tbl, path):
 	for row in tbl:
 		path.write('\t'.join([str(col) for col in row]) + '\n')
 
-
+def get_directionality(flag, row):
+	if flag: # 0:1
+		pos = [x for x in range(0, len(row)) if x % 2 == 0]
+	else: # 1:0
+		pos = [x for x in range(0, len(row)) if x % 2 == 1]
+	return sum([row[p] for p in pos if isinstance(row[p], numbers.Number)])
 
 if not pipeline_flag:
 	final = 1
@@ -29,6 +34,9 @@ else:
 	names.insert(0, 'gene')
 	names.insert(0, 'snp')
 	names.append('sum')
+	names.append('dir01')
+	names.append('dir10')
+	names.append('per')
 	snp_count = final_name + '_coord.txt'
 	g_count = final_name + '_gene.txt'
 	#snp_count = ''.join(['_'.join([str(x[0]) + '_' + str(x[1]) for x in snp_count]), '.txt'])
@@ -77,7 +85,14 @@ for pos in snps_to_genes: # go by row
 			flag = 0
 	
 	row.append(sum([x for x in row[2:] if isinstance(x, numbers.Number)])) # get the count
+	# get the directionality count : 0 1
+	row.append(get_directionality(0, row[2:-1]))
+	# get the direcitonality count : 1 0
+	row.append(get_directionality(1, row[2:-2]))
+	# get the percentage : 0 1
+	row.append(row[-2] / (row[-1] + float(row[-2])) * 100)
 	pos_tbl.append(row)
+
 if final:
 	# print to file
 	with open(snp_count, 'w+') as s:
@@ -87,6 +102,7 @@ if final:
 names.remove('snp') # set names to be acceptable for the gene_dict
 names.remove('sum')
 names.append('count')
+names.append('sum')
 
 snps_per_gene = {snp: gene for (snp, gene) in snps_to_genes} # get dict of snp keys with gene values
 gene_dict = {gene: [] for (snp, gene) in snps_to_genes}
@@ -106,7 +122,8 @@ for col in all_data:
 # get count for all the genes
 for gene in gene_dict:
 	gene_dict[gene] = reduce(lambda x,y: x + y, gene_dict[gene])
-	gene_dict[gene].append(sum(x > 0 for x in gene_dict[gene]))
+	gene_dict[gene].append(sum(x > 0 for x in gene_dict[gene])) # count
+	gene_dict[gene].append(sum(x for x in gene_dict[gene][0:-2])) # sum, not counting the count column
 if final:
 	# print to file
 	with open(g_count, 'w+') as g:
