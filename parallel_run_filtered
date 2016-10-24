@@ -1,0 +1,10 @@
+#!/bin/sh
+#SBATCH --partition=long
+#SBATCH --job-name=MetaVarAnalysis
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=24
+#SBATCH --share
+#SBATCH --mem-per-cpu=15000
+#SBATCH --time=100:00:00
+
+/data/scratch/bdesilva/software/parallel-20160922/src/parallel --link -k python run_genome.py -v {1} -p pair_file.txt -g {2} -o output_filtered_updated_data ::: /data/scratch/bdesilva/MetaVar/filtered_vcfs/*.vcf ::: /data/scratch/bdesilva/MetaVar/updated_comb_gff/*.gff
