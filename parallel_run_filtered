@@ -7,4 +7,4 @@
 #SBATCH --mem-per-cpu=15000
 #SBATCH --time=100:00:00
 
-/data/scratch/bdesilva/software/parallel-20160922/src/parallel --link -k python run_genome.py -v {1} -p pair_file.txt -g {2} -o output_filtered_data ::: /data/scratch/bdesilva/MetaVar/filtered_vcfs/*.vcf ::: /data/scratch/rkumar/work/BRODY/Project2/1/comb_genomes2/*.gff
+/data/scratch/bdesilva/software/parallel-20160922/src/parallel --link -k python run_genome.py -v {1} -p pair_file.txt -g {2} -o output_filtered_updated_data ::: /data/scratch/bdesilva/MetaVar/filtered_vcfs/*.vcf ::: /data/scratch/bdesilva/MetaVar/updated_comb_gff/*.gff

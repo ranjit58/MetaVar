@@ -51,11 +51,12 @@ if g_file_type:
 else:
 	start = 3
 	end = 4
-	gtype = 2
+	gtype = 8
 	glength = 9
+	row_ident = 2
 
 # get the gene name, gene start position, gene end position
-genes = [[gene[gtype], int(gene[start]), int(gene[end])] for gene in genes if len(gene) == glength and gene[gtype][0:4] == 'gene']
+genes = [[gene[gtype].split(';')[0].split('=')[1], int(gene[start]), int(gene[end])] for gene in genes if len(gene) == glength and gene[row_ident] == 'CDS']
 # identify unique snps, store in table, check if each extracted file in all_data has the snp, if yes increment in row
 unique_snps = set() # as rows, then push the 1 or 0 for each file in the extracted data (in a specified order)
 for col in all_data:
